@@ -2,7 +2,23 @@
 
 const MOVEMENTS_URL = 'https://menhir-api.coverflex.com/api/employee/movements';
 
-// Returns the movements of the pocket with the given type, tagged with pocket.type.
+// Employer topups arrive as credit transfers described as "... COVERFLEX TOPUP ITEMID:..."
+function isTopup(movement) {
+  return movement.type === 'transfer' && !movement.is_debit && /COVERFLEX TOPUP/i.test(movement.description || '');
+}
+
+// Map a /movements entry to the field names used by /operations entries,
+// so CSV export and filters treat both the same way.
+function normalizeMovement(movement, pocketType) {
+  return {
+    ...movement,
+    type: isTopup(movement) ? 'topup' : movement.type,
+    category_slug: movement.category_slug ?? movement.category ?? '',
+    pocket: { ...movement.pocket, type: pocketType }
+  };
+}
+
+// Returns the movements of the pocket with the given type, normalized and tagged with pocket.type.
 // Returns [] when the user has no pocket of that type.
 export async function fetchPocketMovements({ pockets, pocketType, fromDate, toDate, headers, fetchFn = fetch }) {
   const pocket = pockets?.find(p => p.type === pocketType);
@@ -25,8 +41,5 @@ export async function fetchPocketMovements({ pockets, pocketType, fromDate, toDa
   }
 
   const data = await response.json();
-  return (data.movements?.list || []).map(m => ({
-    ...m,
-    pocket: { ...m.pocket, type: pocketType }
-  }));
+  return (data.movements?.list || []).map(m => normalizeMovement(m, pocketType));
 }
