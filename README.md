@@ -15,32 +15,33 @@ Chrome extension to download Coverflex transactions as CSV files.
 
 ## Installation
 
-### From Chrome Web Store
+> This is a fork of [ilbonte/coverflex-downloader](https://github.com/ilbonte/coverflex-downloader).
+> The Chrome Web Store version is the upstream one and does not include this fork's fixes
+> (flexible benefits export, category and topup handling for meal/benefit movements).
+> Install it manually from this repository instead.
 
-Visit the [Chrome Web Store page](https://chromewebstore.google.com/detail/coverflex-transaction-dow/liampbeldpbcnnokajmfeojfcnolgnfd
-) and press Add to Chrome
-
-### Manual Installation 
+### Manual Installation
 
 1. **Download the extension**
-   - Go to the [Releases page](https://github.com/ilbonte/coverflex-downloader/releases/latest)
-   - Download the `.zip` file (e.g., `coverflex-downloader-v1.0.0.zip`)
+   - Download [the latest `main` as a ZIP](https://github.com/nunoarmada/coverflex-downloader/archive/refs/heads/main.zip)
 
 2. **Extract the archive**
-   - Unzip the downloaded file to a folder on your computer
-   - Remember the location of this folder
+   - Unzip it to a permanent folder on your computer (Chrome loads the extension from there, so don't delete or move it)
 
 3. **Install in Chrome**
+   - If the Chrome Web Store version is installed, remove or disable it first
    - Open Chrome and navigate to `chrome://extensions/`
    - Enable **"Developer mode"** (toggle in the top-right corner)
    - Click **"Load unpacked"**
-   - Select the folder where you extracted the extension
+   - Select the extracted folder (the one containing `manifest.json`)
    - The extension should now appear in your extensions list
 
+4. **Updating**
+   - Replace the folder contents with a newer ZIP and click the reload (↻) icon on the extension in `chrome://extensions/`
 
 ### For Development
 ```bash
-git clone https://github.com/ilbonte/coverflex-downloader.git
+git clone https://github.com/nunoarmada/coverflex-downloader.git
 cd coverflex-downloader
 npm install
 ```
