@@ -1,6 +1,8 @@
 // Service worker for Coverflex Transaction Downloader
 // Manages token storage and API interception
 
+import { fetchPocketMovements } from '../utils/movements.js';
+
 let cachedToken = null;
 
 // Listen for messages from content script or popup
@@ -78,38 +80,24 @@ async function fetchOperations(fromDate, toDate) {
       throw new Error('Authentication expired');
     }
 
-    // 2. Fetch Pockets to find Meal ID
+    // 2. Fetch Pockets, then movements of the meals and benefits pockets.
+    // Flexible benefits expenses are only available via /movements, not /operations.
     const pocketsUrl = `https://menhir-api.coverflex.com/api/employee/pockets`;
     const pocketsResponse = await fetch(pocketsUrl, { method: 'GET', headers });
 
-    if (pocketsResponse.ok) {
-      const pocketsData = await pocketsResponse.json();
-      const mealPocket = pocketsData.pockets?.find(p => p.type === 'meals');
+    if (pocketsResponse.status === 401) {
+      throw new Error('Authentication expired');
+    }
+    if (!pocketsResponse.ok) {
+      throw new Error(`API error fetching pockets: ${pocketsResponse.status}`);
+    }
 
-      if (mealPocket) {
-        // 3. Fetch Meal Movements
-        const mealsParams = new URLSearchParams({
-          'pocket_id': mealPocket.id,
-          'pagination': 'no',
-          'filters[movement_from]': fromDate.split('T')[0], // API expects YYYY-MM-DD
-          'filters[movement_to]': toDate.split('T')[0]
-        });
-
-        const mealsUrl = `https://menhir-api.coverflex.com/api/employee/movements?${mealsParams}`;
-        const mealsResponse = await fetch(mealsUrl, { method: 'GET', headers });
-
-        if (mealsResponse.ok) {
-          const mealsData = await mealsResponse.json();
-          if (mealsData.movements?.list) {
-            // Tag them as meals and normalize specific fields if necessary
-            const mealsList = mealsData.movements.list.map(m => ({
-              ...m,
-              pocket: { ...m.pocket, type: 'meals' }
-            }));
-            results.operations.list.push(...mealsList);
-          }
-        }
-      }
+    const pocketsData = await pocketsResponse.json();
+    for (const pocketType of ['meals', 'benefits']) {
+      const movements = await fetchPocketMovements({
+        pockets: pocketsData.pockets, pocketType, fromDate, toDate, headers
+      });
+      results.operations.list.push(...movements);
     }
 
     if (results.operations.list.length === 0 && !welfareResponse.ok) {
